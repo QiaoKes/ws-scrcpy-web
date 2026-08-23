@@ -9,14 +9,26 @@ fi
 
 adb start-server >/dev/null
 
-old_ifs=$IFS
-IFS=','
-for endpoint in ${ADB_CONNECT:-}; do
-    endpoint=$(printf '%s' "$endpoint" | tr -d '[:space:]')
-    if [ -n "$endpoint" ]; then
-        adb connect "$endpoint" || true
-    fi
-done
-IFS=$old_ifs
+connect_adb_endpoints() {
+    old_ifs=$IFS
+    IFS=','
+    for endpoint in ${ADB_CONNECT:-}; do
+        endpoint=$(printf '%s' "$endpoint" | tr -d '[:space:]')
+        if [ -n "$endpoint" ]; then
+            adb connect "$endpoint" || true
+        fi
+    done
+    IFS=$old_ifs
+}
+
+connect_adb_endpoints
+
+if [ -n "${ADB_CONNECT:-}" ]; then
+    (
+        while sleep "${ADB_CONNECT_RETRY_SECONDS:-15}"; do
+            connect_adb_endpoints >/dev/null 2>&1
+        done
+    ) &
+fi
 
 exec "$@"

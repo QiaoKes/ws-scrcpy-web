@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       ADB_CONNECT: "10.0.0.219:5555"
+      ADB_CONNECT_RETRY_SECONDS: "15"
       DATA_ROOT: /data
       DEPS_PATH: /data/dependencies
       WS_SCRCPY_CONFIG: /data/config.json

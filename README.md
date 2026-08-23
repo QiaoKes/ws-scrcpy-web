@@ -359,7 +359,7 @@ This fork publishes multi-architecture NAS images to `ghcr.io/qiaokes/ws-scrcpy-
 3. Start the service with `docker compose -f docker-compose.nas.yml up -d`.
 4. Approve the NAS container's ADB key on the Android device the first time it connects.
 
-The `adb-keys` volume preserves that authorization across image updates. Expose only port 8000 through the NAS HTTPS reverse proxy; do not publish Android's ADB port 5555 to the internet.
+The container retries configured ADB endpoints every 15 seconds, so it will connect after the phone approves the key without a restart. The `adb-keys` volume preserves that authorization across image updates. Expose only port 8000 through the NAS HTTPS reverse proxy; do not publish Android's ADB port 5555 to the internet.
 
 ### Virtual displays
 

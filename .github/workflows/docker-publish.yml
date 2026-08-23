@@ -54,3 +54,11 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Smoke-test published image
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          IMAGE=$(printf '%s\n' "$IMAGE_TAGS" | head -n 1)
+          docker run --rm --platform linux/amd64 --entrypoint node "$IMAGE" \
+            -e "require('velopack'); console.log('velopack native module loaded')"
