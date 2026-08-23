@@ -5,7 +5,7 @@ import {
     audioEnabledDefault,
     defaultAudioSourceForSdk,
 } from '../../../common/AudioDefaults';
-import type { ProbeResult } from '../../../common/ProbeResult';
+import type { ProbeDisplay, ProbeResult } from '../../../common/ProbeResult';
 import type GoogDeviceDescriptor from '../../../types/GoogDeviceDescriptor';
 import type { ParamsStreamScrcpy } from '../../../types/ParamsStreamScrcpy';
 import { Attribute } from '../../Attribute';
@@ -52,6 +52,7 @@ export class ConfigureScrcpy extends Modal {
     private statusElement?: HTMLElement;
     private advancedChevron?: HTMLElement;
     private statusText = '';
+    private displays: ProbeDisplay[] = [];
 
     // advancedSection is queried from DOM in populateUI, used by toggleAdvanced
     private advancedSection?: HTMLElement;
@@ -158,17 +159,41 @@ export class ConfigureScrcpy extends Modal {
             }
         }
 
-        // Populate display selector with probe data (single default display)
+        // Populate every Android logical display, including Operator-created virtual displays.
         if (this.displayIdSelectElement) {
             while ((child = this.displayIdSelectElement.firstChild)) {
                 this.displayIdSelectElement.removeChild(child);
             }
-            const displayId = DisplayInfo.DEFAULT_DISPLAY;
-            const optionElement = document.createElement('option');
-            optionElement.setAttribute('value', displayId.toString());
-            optionElement.innerText = `ID: ${displayId}; ${result.width}x${result.height}`;
-            this.displayIdSelectElement.appendChild(optionElement);
-            this.displayInfo = new DisplayInfo(displayId, new Size(result.width, result.height), 0, 0, 0);
+            this.displays = result.displays?.length
+                ? result.displays
+                : [
+                      {
+                          id: DisplayInfo.DEFAULT_DISPLAY,
+                          name: 'Default display',
+                          width: result.width,
+                          height: result.height,
+                          density: result.density,
+                          type: 'UNKNOWN',
+                          isVirtual: false,
+                      },
+                  ];
+            for (const display of this.displays) {
+                const optionElement = document.createElement('option');
+                optionElement.value = display.id.toString();
+                const virtualLabel = display.isVirtual ? ' - virtual' : '';
+                optionElement.innerText = `${display.name} (ID ${display.id}) - ${display.width}x${display.height}${virtualLabel}`;
+                this.displayIdSelectElement.appendChild(optionElement);
+            }
+
+            const savedDisplayId = this.getPlayer()?.loadVideoSettings(this.udid).displayId;
+            const selected =
+                this.displays.find((display) => display.id === savedDisplayId) ??
+                this.displays.find((display) => display.id === DisplayInfo.DEFAULT_DISPLAY) ??
+                this.displays[0];
+            if (selected) {
+                this.displayIdSelectElement.value = selected.id.toString();
+                this.setSelectedDisplay(selected);
+            }
         }
 
         // Apply player video settings (may reset dropdowns from stored prefs)
@@ -326,9 +351,15 @@ export class ConfigureScrcpy extends Modal {
     }
 
     private onDisplayIdChange = (): void => {
-        // Display info is set during probe; just refresh player settings
+        const displayId = Number.parseInt(this.displayIdSelectElement?.value ?? '', 10);
+        const selected = this.displays.find((display) => display.id === displayId);
+        if (selected) this.setSelectedDisplay(selected);
         this.updateVideoSettingsForPlayer();
     };
+
+    private setSelectedDisplay(display: ProbeDisplay): void {
+        this.displayInfo = new DisplayInfo(display.id, new Size(display.width, display.height), 0, 0, 0);
+    }
 
     private getPlayer(): PlayerClass | undefined {
         return StreamClientScrcpy.getPlayers()[0];
@@ -353,9 +384,6 @@ export class ConfigureScrcpy extends Modal {
     }
 
     private fillInputsFromVideoSettings(videoSettings: VideoSettings, fitToScreen: boolean): void {
-        if (this.displayInfo && this.displayInfo.displayId !== videoSettings.displayId) {
-            console.error(this.TAG, `Display id from VideoSettings and DisplayInfo don't match`);
-        }
         this.fillBasicInput({ id: 'bitrate' }, videoSettings);
         this.fillBasicInput({ id: 'maxFps' }, videoSettings);
         this.fillBasicInput({ id: 'iFrameInterval' }, videoSettings);

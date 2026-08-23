@@ -5,6 +5,7 @@ import { DEVICE_SERVER_PATH, SERVER_PACKAGE } from '../common/Constants';
 import type { ProbeResult } from '../common/ProbeResult';
 import { AdbClient } from './AdbClient';
 import { Config } from './Config';
+import { parseLogicalDisplays } from './displayListParser';
 import { ensureScrcpyServerPushed } from './ensureScrcpyServerPushed';
 import { ControlCenter } from './goog-device/services/ControlCenter';
 import { parseWmDensity, parseWmSize } from './goog-device/wmParsers';
@@ -87,20 +88,34 @@ export class DeviceProbe extends Mw {
         const sdkInt = this.getCachedSdkInt();
         const useScrcpyList = sdkInt > 0 && sdkInt < 28;
 
-        const [sizeOutput, densityOutput, encoders] = await Promise.all([
+        const [sizeOutput, densityOutput, displayOutput, encoders] = await Promise.all([
             this.adbClient.shell(this.serial, 'wm size'),
             this.adbClient.shell(this.serial, 'wm density'),
+            this.adbClient.shell(this.serial, 'dumpsys display'),
             useScrcpyList ? this.listEncodersViaScrcpyServer() : this.listEncodersViaDumpsys(),
         ]);
 
         const { width, height } = parseWmSize(sizeOutput);
         const density = parseWmDensity(densityOutput);
+        const displays = parseLogicalDisplays(displayOutput);
+        if (!displays.some((display) => display.id === 0)) {
+            displays.unshift({
+                id: 0,
+                name: 'Default display',
+                width,
+                height,
+                density,
+                type: 'UNKNOWN',
+                isVirtual: false,
+            });
+        }
 
         const result: ProbeResult = {
             width,
             height,
             density,
             sdkInt,
+            displays,
             videoEncoders: encoders.videoEncoders,
             audioEncoders: encoders.audioEncoders,
         };

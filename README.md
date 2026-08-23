@@ -352,7 +352,18 @@ See `docs/TECHNICAL_GUIDE.md` section 15 for details on the Logger utility and a
 
 ## Docker
 
-A legacy `Dockerfile` exists in the repo but is not actively maintained and targets an older Node version. Docker-based deployment is planned but has not shipped yet. For now, use the MSI, AppImage, or portable ZIP.
+This fork publishes multi-architecture NAS images to `ghcr.io/qiaokes/ws-scrcpy-web`. Both `linux/amd64` and `linux/arm64` are built automatically from `main`.
+
+1. Copy `docker-compose.nas.yml` to the NAS and change `ADB_CONNECT` to the Android device's LAN address.
+2. Create `data/config.json` from `docker/config.example.json`. Add the reverse-proxy hostname to `allowedHosts` when using a domain.
+3. Start the service with `docker compose -f docker-compose.nas.yml up -d`.
+4. Approve the NAS container's ADB key on the Android device the first time it connects.
+
+The `adb-keys` volume preserves that authorization across image updates. Expose only port 8000 through the NAS HTTPS reverse proxy; do not publish Android's ADB port 5555 to the internet.
+
+### Virtual displays
+
+The connection dialog discovers Android logical displays on every probe and lists each display by name, ID, resolution, and virtual status. Selecting a display passes its ID to the scrcpy session, so video and all control events target the same physical or virtual display.
 
 ## Acknowledgments
 

@@ -1,0 +1,15 @@
+services:
+  ws-scrcpy-web:
+    image: ghcr.io/qiaokes/ws-scrcpy-web:latest
+    container_name: ws-scrcpy-web
+    restart: unless-stopped
+    environment:
+      ADB_CONNECT: "10.0.0.219:5555"
+      DATA_ROOT: /data
+      DEPS_PATH: /data/dependencies
+      WS_SCRCPY_CONFIG: /data/config.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+      - ./adb-keys:/root/.android

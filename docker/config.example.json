@@ -1,0 +1,7 @@
+{
+  "installMode": "system",
+  "webPort": 8000,
+  "firstRunComplete": true,
+  "adbPath": "/usr/bin/adb",
+  "allowedHosts": []
+}

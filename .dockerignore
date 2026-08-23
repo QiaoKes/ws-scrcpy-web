@@ -1,5 +1,14 @@
-node_modules
-dist
-build
 .git
 .github
+.idea
+.vscode
+build
+dependencies
+dist
+node_modules
+publish
+Releases
+target
+seed
+*.log
+docker-compose*.yml
