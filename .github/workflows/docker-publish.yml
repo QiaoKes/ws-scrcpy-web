@@ -62,3 +62,5 @@ jobs:
           IMAGE=$(printf '%s\n' "$IMAGE_TAGS" | head -n 1)
           docker run --rm --platform linux/amd64 --entrypoint node "$IMAGE" \
             -e "require('velopack'); console.log('velopack native module loaded')"
+          docker run --rm --platform linux/amd64 "$IMAGE" sh -c \
+            'test -x "$DEPS_PATH/node/bin/node" && test -x "$DEPS_PATH/adb/adb" && echo "managed dependency links ready"'

@@ -1,7 +1,13 @@
 #!/bin/sh
 set -eu
 
-mkdir -p /data/dependencies /root/.android
+mkdir -p "$DEPS_PATH/node/bin" "$DEPS_PATH/adb" /root/.android
+
+# The desktop build manages private Node.js and ADB copies under DEPS_PATH.
+# Docker already ships both binaries, so expose them at those managed paths
+# to keep dependency readiness checks and shell capability detection accurate.
+ln -sfn "$(command -v node)" "$DEPS_PATH/node/bin/node"
+ln -sfn "$(command -v adb)" "$DEPS_PATH/adb/adb"
 
 if [ ! -f "$WS_SCRCPY_CONFIG" ]; then
     cp /app/docker-config.example.json "$WS_SCRCPY_CONFIG"
